@@ -1,0 +1,1790 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 0467feab27804fe48a4b61fcfb3cc75e
+      name: Sophos
+  templates:
+    - uuid: 8e587774926c400a9d8b32029fa3777f
+      template: '001 - SOPHOS_XG_V22'
+      name: '001 - SOPHOS_XG_V22'
+      description: 'Template feito por Rodrigo Miranda'
+      groups:
+        - name: Sophos
+      items:
+        - uuid: 34437e2b5aa445d7ab752f433f3f1090
+          name: '1.7 - PING Status'
+          type: SIMPLE
+          key: icmpping
+          delay: 15s
+          description: |
+            The host accessibility by ICMP ping.
+            
+            0 - ICMP ping fails;
+            1 - ICMP ping successful.
+          valuemap:
+            name: 'Sophos IPsec Status'
+          triggers:
+            - uuid: 58cdf3d89e08470fb7f87f0a0036fa60
+              expression: 'max(/001 - SOPHOS_XG_V22/icmpping,#3)=0'
+              name: '{HOST.NAME} OFFLINE'
+              event_name: 'ICMP {HOST.NAME} sem resposta (3 falhas consecutivas)'
+              opdata: 'Status: {ITEM.LASTVALUE}'
+              priority: DISASTER
+              description: 'O dispositivo não respondeu aos últimos 3 pacotes de ping. Possível queda de energia, falha no link de internet ou firewall travado.'
+              tags:
+                - tag: Serviço
+                  value: Conectividade
+        - uuid: acbceae8c2084ac39002148d70524ce5
+          name: 'Conexoes Ativas'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.11.0
+          key: sophos.connections.active
+          status: DISABLED
+        - uuid: bf19e21d89594a09827ea4bcefb4b246
+          name: '2.3 - Uso de CPU -  Media'
+          type: CALCULATED
+          key: sophos.cpu.usage.avg
+          value_type: FLOAT
+          units: '%'
+          params: 'avg(last_foreach(/*/sophos.cpu.usage.[*]))'
+          triggers:
+            - uuid: 80d0349705124ab78030283e3da0a937
+              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.cpu.usage.avg,5m)>90'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'avg(/001 - SOPHOS_XG_V22/sophos.cpu.usage.avg,5m)<70'
+              name: 'Uso de CPU elevado em {HOST.NAME} (Acima de 90%)'
+              event_name: 'CPU de {HOST.NAME} em {ITEM.LASTVALUE}%'
+              opdata: 'Carga atual: {ITEM.LASTVALUE}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Performance
+        - uuid: 72f1264e65aa4f598b1006233dd8a7de
+          name: '2.1 - Data do dispositivo'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.1.0
+          key: sophos.currentdate
+          trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return Math.round(Date.parse(value) / 1000);'
+          triggers:
+            - uuid: cf0b4a33bc8f47ca93d69eac48b2af8b
+              expression: 'fuzzytime(/001 - SOPHOS_XG_V22/sophos.currentdate, 60)=0'
+              name: 'Relógio de {HOST.NAME} desatualizado'
+              event_name: 'Relógio de {HOST.NAME} fora de sincronia (>1 min)'
+              priority: WARNING
+              manual_close: 'YES'
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: c4ed43b4054a47d18a27165150eba4cb
+          name: '2.4.1 - Capacidade Total do Disco'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.4.1.0
+          key: sophos.disk.capacity
+          delay: 1d
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1048576'
+        - uuid: 639c75ea49b04420a3de274c2d9ba341
+          name: '2.4.2 - Uso do Disco'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.4.2.0
+          key: sophos.disk.usage
+          units: '%'
+          triggers:
+            - uuid: 3c92f450ea2a429ca8a36262cc86b9b3
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.disk.usage)>90'
+              name: 'Uso de disco elevado em {HOST.NAME} (Acima de 90%)'
+              event_name: 'Disco de {HOST.NAME} quase cheio ({ITEM.LASTVALUE}%)'
+              opdata: 'Espaço ocupado: {ITEM.LASTVALUE}%'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Performance
+        - uuid: fbc05b5a231e4ce0bb1199dca13844bd
+          name: '1.3 - Versao da Firmware'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.2604.5.1.1.3.0
+          key: sophos.firmware
+          delay: 12h
+          value_type: TEXT
+          trends: '0'
+          inventory_link: OS_FULL
+          triggers:
+            - uuid: e21f6b8012cf4d1180b001a97396f29f
+              expression: 'change(/001 - SOPHOS_XG_V22/sophos.firmware)<>0'
+              name: 'Firmware de {HOST.NAME} foi alterada'
+              event_name: 'A versão do firmware mudou para {ITEM.LASTVALUE}'
+              priority: INFO
+              description: 'Este gatilho avisa quando há atualização de firmware no Sophos. Verifique se foi uma mudança agendada pela TI.'
+              manual_close: 'YES'
+              tags:
+                - tag: Serviço
+                  value: Auditoria
+        - uuid: 4335152e3d5644d8a834d40d5bd36a9a
+          name: '4.1 - Status do HA'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.4.1.0
+          key: sophos.ha.status
+          valuemap:
+            name: 'Sophos HA Service'
+          triggers:
+            - uuid: 9fc558f0176244d8b1d1071a415069a7
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.status)=6'
+              name: 'Falha na Alta Disponibilidade (HA) em {HOST.NAME}'
+              event_name: 'HA do Sophos em estado de FALHA (Erro Crítico)'
+              priority: DISASTER
+              tags:
+                - tag: Serviço
+                  value: Disponibilidade
+        - uuid: 97ee98bd249243578ff9fe376fbebca0
+          name: '1.1 - Nome do Host'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.2604.5.1.1.1.0
+          key: sophos.hostname
+          delay: 1d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: NAME
+        - uuid: a7c4de13c9e442b9bb40472e8fae1821
+          name: '1.6 - Versao do IPS'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.2604.5.1.1.6.0
+          key: sophos.ips.version
+          delay: 1d
+          value_type: TEXT
+          trends: '0'
+        - uuid: 77fcf91f6e51490bb915b483cd0dd7e6
+          name: '5.1.2 - Expiracao Licenca Base'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.1.2.0
+          key: sophos.lic.base.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: b968b37af2d04f1b874068f36dc0687c
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.base.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "BASE" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 98adcf9af4d543d0b333e708cebe98ec
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.base.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "BASE" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: 14ccba88cb39457381d1576ecaff1108
+          name: '5.1.1 -Status Licenca Base'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.1.1.0
+          key: sophos.lic.base.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: 648745bb17854296bca291058ca1b2cf
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.base.status)<>3'
+              name: 'Licença "BASE" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: ed5b56c398424ce7b0742fea82eaff51
+          name: '5.9.2 -Expiracao Licenca Central Orchestration'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.9.2.0
+          key: sophos.lic.centralorch.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: 5f4bf2c394434cc39148412318612374
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "CENTRAL ORCHESTRATION" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: e1df81c6e3db4afdbc38db5256c7031a
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "CENTRAL ORCHESTRATION" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: d2c981f8d6654960b5bac38770d42990
+          name: '5.9.1 - Status Licenca Central Orchestration'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.9.1.0
+          key: sophos.lic.centralorch.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: e1508aff6b5a499387d9feae271ecfbe
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.status)<>2'
+              name: 'Licença "CENTRAL ORCHESTRATION" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: 6238d1eddb184158ba0a3fb43e226a33
+          name: '5.4.2 - Expiracao Licenca E-mail Protection'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.4.2.0
+          key: sophos.lic.email.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: b4fe40b64dab428f82a4e66f1c2e8b47
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.email.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE EMAIL" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 57d7510cadef421784f5337015b65b82
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.email.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE EMAIL" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: 63abedc5cf6b4b829cf89002414e1b9a
+          name: '5.4.1 - Status Licenca E-mail Protection'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.4.1.0
+          key: sophos.lic.email.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: 701839ac1b954d94a22c403a467a5349
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.email.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.email.status)<>2'
+              name: 'Licença "PROTEÇÃO DE EMAIL" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: 3822e152103f493a87942ae7a748d645
+          name: '5.2.2 -Expiracao Licenca Protecao de Rede'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.2.2.0
+          key: sophos.lic.net.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: b4aef08844594057b0dad7f4a223284d
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.net.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE REDE" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 1194f262ec46448692483a5aa3e2fd5e
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.net.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE REDE" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: f86e1b386e8a425e96ae41eafe82d1d8
+          name: '5.2.1 - Status Licenca Protecao de Rede'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.2.1.0
+          key: sophos.lic.net.status
+          trends: '0'
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: ad17f2649111495f9e75ffb9f777e748
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.net.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.net.status)<>2'
+              name: 'Licença "PROTEÇÃO DE REDE" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: a8d268cf71254c72bc13a2f51843e8bf
+          name: '5.7.2 - Expiracao Licenca Suporte Aprimorado'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.7.2.0
+          key: sophos.lic.suport.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: db35adc7dc654766b4af44d1e0bc30bd
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suport.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "SUPORTE" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 0399dd6eac0a40f29ec400e70675bcd8
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suport.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "SUPORTE" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: b8a65f5ecdc24150b4e84f0aa3645f86
+          name: '5.7.1 - Status Licenca Suporte Aprimorado'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.7.1.0
+          key: sophos.lic.suport.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: 47182d39fce04c6d8d05f061028919fe
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suport.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.suport.status)<>2'
+              name: 'Licença "SUPORTE" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: 65e368095a854e8987f2731663d28b50
+          name: '5.8.2 - Expiracao Licenca Suporte Aprimorado Plus'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.8.2.0
+          key: sophos.lic.suportplus.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: dc6ad53983174dc6ba3ae26491ce4386
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "SUPORTE AVANÇADO" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 96c5b92b312844dc8db44ad23d11667c
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "SUPORTE AVANÇADO" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: 56f0af9f64fa419a9b8cfa4886190cba
+          name: '5.8.1 - Status Licenca Suporte Aprimorado Plus'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.8.1.0
+          key: sophos.lic.suportplus.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: a9ff7b3172b04949aa3283a6a07843bb
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.status)<>2'
+              name: 'Licença "SUPORTE AVANÇADO" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: d4d83b65199b4eb7960639d6da232ecb
+          name: '5.3.2 - Expiracao Licenca Protecao da Web'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.3.2.0
+          key: sophos.lic.web.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: 7f65f94e1801419eae1813e67e3ec7a0
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.web.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DA WEB" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 211c1d517a1641a9929d6b4b24a089ba
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.web.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DA WEB" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: 13d69920f1c648ca9ed778b5d8f23396
+          name: '5.3.1 - Status Licenca Protecao da Web'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.3.1.0
+          key: sophos.lic.web.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: 8de5ecff90774de9ba5bf280557fd53b
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.web.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.web.status)<>2'
+              name: 'Licença "PROTEÇÃO DA WEB" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: ce178b6cd38a454eb879fa5b3463409b
+          name: '5.5.2 - Expiracao Licenca Protecao de Servidor Web'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.5.2.0
+          key: sophos.lic.webserver.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: 8add77c9d69f43e4b0c9c9291b2cc74d
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE WEBSERVER" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 04f61fbe4454433683cadc1cacfa3a81
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE WEBSERVER" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: 2b140bb8301b4cfb934af09e0682c48f
+          name: '5.5.1 - Status Licenca Protecao de Servidor Web'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.5.1.0
+          key: sophos.lic.webserver.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: 963988787948487fb8d2e682b97c6134
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.status)<>2'
+              name: 'Licença "PROTEÇÃO DE WEBSERVER" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: 90d64adec19342f289fa3a8a47179a28
+          name: '5.6.2 - Expiracao Licenca Protecao de Zero Day'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.6.2.0
+          key: sophos.lic.zeroday.exp
+          value_type: TEXT
+          trends: '0'
+          triggers:
+            - uuid: e741fae1a0fb46609df2fab8e356b730
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.exp)<30'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO ZERO DAY" vence em menos de 30 dias em {HOST.NAME1}'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 39d9ebae446549ab8724f90ea7594c6f
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.exp)<7'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO ZERO DAY" vence em {ITEM.LASTVALUE} dias!'
+              priority: HIGH
+              manual_close: 'YES'
+        - uuid: 071b2e2d0f8f494198989319aeb971a2
+          name: '5.6.1 - Status Licenca Protecao de Zero Day'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.5.6.1.0
+          key: sophos.lic.zeroday.status
+          description: |
+            1: Unregistered (Não registrado)
+            2: Sem Assinatura (Inativo)
+            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            4: Expired (Expirado)
+            5: Invalid (Inválido)
+          valuemap:
+            name: 'Sophos License Status'
+          triggers:
+            - uuid: 8037acacb76c44e9854f4a34fe64af31
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.status)<>2'
+              name: 'Licença "PROTEÇÃO ZERO DAY" NÃO ESTÁ ATIVA em {HOST.NAME1}'
+              priority: DISASTER
+              manual_close: 'YES'
+        - uuid: 7bafa6f1c2f14c90b8acbf439ad0deb6
+          name: '2.5.1 - Capacidade Total de RAM'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.5.1.0
+          key: sophos.mem.capacity
+          delay: 1d
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1048576'
+        - uuid: d39edcdb3a384066a96f1a80b35cdd17
+          name: '2.5.2 - Uso de Memoria RAM'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.5.2.0
+          key: sophos.mem.usage
+          units: '%'
+          triggers:
+            - uuid: 7065317855f34dc5af83e77eba0d81d2
+              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.mem.usage,5m)>90'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'avg(/001 - SOPHOS_XG_V22/sophos.mem.usage,5m)<80'
+              name: 'Uso de Memória RAM elevado em {HOST.NAME} (>90%)'
+              event_name: 'RAM de {HOST.NAME} quase cheia ({ITEM.LASTVALUE}%)'
+              opdata: 'Consumo atual: {ITEM.LASTVALUE}%'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Performance
+        - uuid: 5ea82202b0514669a030d5607b388108
+          name: '1.2 - Modelo do Firewall'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.2604.5.1.1.2.0
+          key: sophos.model
+          delay: 1d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: MODEL
+        - uuid: d09613b94e504fabbb957f803c6f61b8
+          name: '1.4 - Numero de Serie'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.2604.5.1.1.4.0
+          key: sophos.serialnumber
+          delay: 1d
+          value_type: TEXT
+          trends: '0'
+          inventory_link: SERIALNO_A
+        - uuid: d9649bf2998f42f2bae2bc42f01a2199
+          name: '3.11 - Status do Serviço Apache'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.11.0
+          key: sophos.service.apache
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: bb594f35c8834b7399c0d6aeb95447df
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.apache)=2'
+              name: 'Serviço APACHE PAROU em {HOST.NAME}'
+              priority: WARNING
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: fcec20d8cc424256be1da54797eae6f0
+          name: '3.7 - Status do Serviço AntiSpam'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.7.0
+          key: sophos.service.as
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 9fe5423e1d8145ee9bf24d151b656ab7
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.as)=2'
+              name: 'Serviço ANTISPAM PAROU em {HOST.NAME}'
+              priority: WARNING
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 67c9b53002e0448a9c61025a72097445
+          name: '3.6 - Status do Serviço AntiVirus'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.6.0
+          key: sophos.service.av
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 45cf19dfe58d419fa609308ab003a1a6
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.av)=2'
+              name: 'Serviço ANTIVIRUS PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 644a96bee8414aa6aa07aaadeb02a436
+          name: '3.16 - Status do Serviço Banco de Dados'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.16.0
+          key: sophos.service.database
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: e229c7fa652145eea4afa308aebac55e
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.database)=2'
+              name: 'Serviço BANCO DE DADOS PAROU em {HOST.NAME}'
+              priority: AVERAGE
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 1437f9b01ff7438b83281349bdc42736
+          name: '3.21 - Status do Serviço Geteway (DGD)'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.21.0
+          key: sophos.service.dgd
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 07fd419edb5d4005b6e3c962babad0ef
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.dgd)=2'
+              name: 'Serviço DGD PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 60d3fc20f7054da7a29f9a6a531aabf4
+          name: '3.8 - Status do Serviço DNS'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.8.0
+          key: sophos.service.dns
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: b7a523baae96436c89aa44d4c532fbe8
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.dns)=2'
+              name: 'Serviço DNS PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: fd50e201e9cc478bb35b5bda95943e6b
+          name: '3.4 - Status do Serviço FTP'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.4.0
+          key: sophos.service.ftp
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 476d002c50b3483c9447cf10524aa924
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ftp)=2'
+              name: 'Serviço FTP PAROU em {HOST.NAME}'
+              priority: WARNING
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 38eefe48ec644d0087f634ff7c759f84
+          name: '3.18 - Status do Serviço Logs (Garner)'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.18.0
+          key: sophos.service.garner
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: aa299b8d76af4677ad97b03bb7722548
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.garner)=2'
+              name: 'Serviço LOGS(GARNER) PAROU em {HOST.NAME}'
+              priority: AVERAGE
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 7e2455caea6e490094ba2c1939a48ca5
+          name: '3.9 - Status do Serviço HA'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.9.0
+          key: sophos.service.ha
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 08644fbbcbbf461c896c38c0530b4935
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ha)=2'
+              name: 'Serviço HA PAROU em {HOST.NAME}'
+              priority: AVERAGE
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 1b857ef2f61045a3a90800b89f745c65
+          name: '3.5 - Status do Serviço HTTP'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.5.0
+          key: sophos.service.http
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 816b6096fcb94c6f905d1682b70e288f
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.http)=2'
+              name: 'Serviço HTTP PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 1f39e830ef6d4b39b8fb49fc14d373f0
+          name: '3.2 - Status do Serviço IMAP'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.2.0
+          key: sophos.service.imap
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 785496cf9c544c0f91f359eb40b3bf24
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.imap)=2'
+              name: 'Serviço IMAP PAROU em {HOST.NAME}'
+              priority: WARNING
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 2fc201531423424c940215d377ddf819
+          name: '3.10 - Status do Serviço IPS'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.10.0
+          key: sophos.service.ips
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: d688f6bda94641d8a36a62fcdf9041ae
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ips)=2'
+              name: 'Serviço IPS PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: ada00cd6f0af4b02b86157d6451cca3c
+          name: '3.15 - Status do Serviço IPSecVPN'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.15.0
+          key: sophos.service.ipsecvpn
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 2c3f81ac64784f1faa6e4c31cf426018
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ipsecvpn)=2'
+              name: 'Serviço IPSEC VPN PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 2cd00713d13f46679c4d34b3861d6e46
+          name: '3.17 - Status do Serviço Rede'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.17.0
+          key: sophos.service.network
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 2c8e4b561b184a839608a50060480bdc
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.network)=2'
+              name: 'Serviço NETWORK PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: f581aef99e4a40169f25c5858b751c36
+          name: '3.12 - Status do Serviço NTP'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.12.0
+          key: sophos.service.ntp
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 3df502247ff04356bb1ce961bc024906
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ntp)=2'
+              name: 'Serviço NTP PAROU em {HOST.NAME}'
+              priority: AVERAGE
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: c94cd37e5ea04022aa1f8df1e26e27e6
+          name: '3.1 - Status do Serviço POP3'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.1.0
+          key: sophos.service.pop3
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: ad3128012c5d44ca972c69785005332c
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.pop3)=2'
+              name: 'Serviço POP3 PAROU em {HOST.NAME}'
+              priority: WARNING
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 2bbdb90bc4304fa1a6750943d1c14bd2
+          name: '3.19 - Status do Serviço Roteamento'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.19.0
+          key: sophos.service.routing
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: f290d838e61041a99a6b249952ace011
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.routing)=2'
+              name: 'Serviço ROUTING PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: a427ac52f7004691bce6d4470d43b62c
+          name: '3.3 - Status do Serviço SMTP'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.3.0
+          key: sophos.service.smtp
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: baf862ba7c4846b692ecb561b8209229
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.smtp)=2'
+              name: 'Serviço SMTP PAROU em {HOST.NAME}'
+              priority: AVERAGE
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 71bd4b1b670c491ead08c387331c023e
+          name: '3.20 - Status do Serviço SSH'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.20.0
+          key: sophos.service.ssh
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 4e9b08e442ef4916984b07292a9959a4
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ssh)=2'
+              name: 'Serviço SSH PAROU em {HOST.NAME}'
+              priority: AVERAGE
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: b12e705cc8614d0aac5a222b34e79d3b
+          name: '3.14 - Status do Serviço SSLVPN'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.14.0
+          key: sophos.service.sslvpn
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: deaccd97fe294537907400bd7b3401e4
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.sslvpn)=2'
+              name: 'Serviço SSL VPN PAROU em {HOST.NAME}'
+              priority: HIGH
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: c7b16395b5be41049893864d175a8f41
+          name: '3.13 - Status do Serviço TomCat'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.3.13.0
+          key: sophos.service.tomcat
+          valuemap:
+            name: 'Sophos Service Status'
+          triggers:
+            - uuid: 97e5ad4ef7804e5aa14e856d3514e6eb
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.tomcat)=2'
+              name: 'Serviço TOMCAT PAROU em {HOST.NAME}'
+              priority: WARNING
+              tags:
+                - tag: Serviço
+                  value: Sistema
+        - uuid: 09f7829824fa4e19add6f9155329467f
+          name: '2.5.3 - Capacidade Total do Swap'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.5.3.0
+          key: sophos.swap.capacity
+          delay: 1d
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1048576'
+        - uuid: 8022912951af4a5abacd3023e596b1e4
+          name: '2.5.4 - Uso de Swap'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.5.4.0
+          key: sophos.swap.usage
+          units: '%'
+          triggers:
+            - uuid: 6492dd5999b94b34b579f1af17da2f98
+              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.swap.usage,5m)>20'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'avg(/001 - SOPHOS_XG_V22/sophos.swap.usage,5m)<10'
+              name: 'Uso de Swap elevado em {HOST.NAME} (>20%)'
+              event_name: '{HOST.NAME} está usando Swap ({ITEM.LASTVALUE}%)'
+              opdata: 'Swap atual: {ITEM.LASTVALUE}%'
+              priority: WARNING
+              tags:
+                - tag: Serviço
+                  value: Perfomance
+        - uuid: 905c7a067f174573b0f496d1885f44be
+          name: '2.8 - FTP Hits'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.8.0
+          key: sophos.traffic.ftp
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+        - uuid: 95144e4cb9d24d56bbb5de02284473f9
+          name: '2.7 - HTTP Hits'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.7.0
+          key: sophos.traffic.http
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+        - uuid: f754e857ba8548d8bc6011c3de25c6a8
+          name: '2.9 - E-mails Processados'
+          type: CALCULATED
+          key: sophos.traffic.mail
+          params: 'last(//sophos.traffic.mail.smtp) + last(//sophos.traffic.mail.pop3) + last(//sophos.traffic.mail.imap)'
+        - uuid: 7249c37ebf4a4bc58d7e78ae166bf6d6
+          name: '2.9.2 - E-mails via IMAP'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.9.2.0
+          key: sophos.traffic.mail.imap
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+        - uuid: b1dc1ede72f342c280e59a9b8f54282a
+          name: '2.9.1 - E-mails via POP3'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.9.1.0
+          key: sophos.traffic.mail.pop3
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+        - uuid: 77bc7464c31048b6bab79299df600c70
+          name: '2.9.3 - E-mails via SMTP'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.9.3.0
+          key: sophos.traffic.mail.smtp
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+              parameters:
+                - ''
+        - uuid: 786092db6b2743e582d2011b85761a10
+          name: '2.2 - Uptime'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.2.0
+          key: sophos.uptime
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          triggers:
+            - uuid: 8d1a1cb6a25343f09c178a3543ce8a34
+              expression: 'last(/001 - SOPHOS_XG_V22/sophos.uptime)<10m'
+              name: '{HOST.NAME} foi reiniciaro recentemente'
+              event_name: '{HOST.NAME} deu boot (Uptime < 10 min)'
+              opdata: 'Tempo ligado: {ITEM.LASTVALUE}'
+              priority: WARNING
+              manual_close: 'YES'
+              tags:
+                - tag: Serviço
+                  value: Disponibilidade
+        - uuid: 06a2f4e2951947dba29d5e7513d291df
+          name: '2.6 - Usuarios Conectados'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.6.0
+          key: sophos.users.count
+          delay: 30s
+        - uuid: 542e9b14deef48d5b6414e363578ec5a
+          name: '1.5 - Versao do WebCat'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.2604.5.1.1.5.0
+          key: sophos.webcat
+          delay: 1d
+          value_type: TEXT
+          trends: '0'
+        - uuid: 85b359cd556040238daf4287ccbdf24f
+          name: '1.8 - Contato'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.4.0
+          key: sys.contact
+          delay: 15s
+          value_type: TEXT
+          trends: '0'
+          inventory_link: CONTACT
+        - uuid: d424a37ef913462999f97b0eec70a255
+          name: '1.9 - Localização'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.6.0
+          key: sys.location
+          delay: 15s
+          value_type: TEXT
+          trends: '0'
+          inventory_link: LOCATION
+      discovery_rules:
+        - uuid: 9bf897e2eec34653a6e40efc0e8e72d9
+          name: 'Access Point Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#AP_NAME}, .1.3.6.1.4.1.2604.5.1.7.1.1.1.1]'
+          key: sophos.ap.discovery
+          delay: 1h
+          description: |
+            Não testado...
+            Não criei gatilhos nem graficos, pois não tinha como testar, por não usar APs da sophos.
+          item_prototypes:
+            - uuid: 13b24330fcc64ac9bb1da482f34d2964
+              name: '7.1.6 - AP: Total Clientes - {#AP_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.1.1.6.{#SNMPINDEX}'
+              key: 'sophos.ap.clients[{#SNMPINDEX}]'
+              trends: '0'
+            - uuid: 396ac2ef94914cf7b30e86c860588c43
+              name: '7.1.3 - AP: ID - {#AP_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.1.1.3.{#SNMPINDEX}'
+              key: 'sophos.ap.id[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 3ca4e48741134ed88359c83d121f9f37
+              name: '7.1.4 - AP: MAC - {#AP_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.1.1.4.{#SNMPINDEX}'
+              key: 'sophos.ap.mac[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 02487768f8ee4510a24e45cedd09687e
+              name: '7.1.2 - AP: Modelo - {#AP_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.1.1.2.{#SNMPINDEX}'
+              key: 'sophos.ap.model[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 5976456ea0494176bce945f21fd4048d
+              name: '7.1.1 - AP: Nome - {#AP_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.1.1.1.{#SNMPINDEX}'
+              key: 'sophos.ap.name[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 3caf8b07fbba41cca14d05e8f1f77bc8
+              name: '7.1.5 - AP: Status - {#AP_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.1.1.5.{#SNMPINDEX}'
+              key: 'sophos.ap.status[{#SNMPINDEX}]'
+              trends: '0'
+        - uuid: 20443fbea6234245a13a36cbe7d27293
+          name: 'CPU Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#CPU.INDEX},.1.3.6.1.2.1.25.3.3.1.2]'
+          key: sophos.cpu.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 192d1f1c3f2541f3bf3c981c9a49e2a6
+              name: '2.3.{#CORE_NUM} - Uso do CPU - {#CORE_NUM}º Core'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.25.3.3.1.2.{#SNMPINDEX}'
+              key: 'sophos.cpu.usage.[{#SNMPINDEX}]'
+              units: '%'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var output = JSON.parse(value);
+                  
+                  for (var i = 0; i < output.length; i++) {
+                      // Essa linha cria a macro que o nome do item vai usar
+                      output[i]["{#CORE_NUM}"] = (i + 1).toString();
+                  }
+                  
+                  return JSON.stringify(output);
+        - uuid: c0ee5e36b1124bbaa02b748f37cb6ff6
+          name: 'HA Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#HA_STATUS}, .1.3.6.1.4.1.2604.5.1.4.1]'
+          key: sophos.ha.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#HA_STATUS}'
+                value: ^2$
+                formulaid: A
+          lifetime_type: DELETE_NEVER
+          lifetime: '0'
+          enabled_lifetime_type: DISABLE_AFTER
+          enabled_lifetime: 7d
+          item_prototypes:
+            - uuid: b29fffe2c162409f876a38131b5a8e5e
+              name: '4.2 - Serial do Firewall Corrente'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.2.[{#SNMPINDEX}]'
+              key: 'sophos.ha.appk.current[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: ec11933314e64713910a0063ee6fde4f
+              name: '4.3 - Serial do Firewall Vizinho'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.3.[{#SNMPINDEX}]'
+              key: 'sophos.ha.appk.peer[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: 744b13067d904c4795afa4ca3df292f7
+              name: '4.11.3 - IPV6 Admin Auxiliar'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.11.3.[{#SNMPINDEX}]'
+              key: 'sophos.ha.auxadminipv6[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: b4e7520fae2048d381632202584edd41
+              name: '4.11.2 - IPV4 Admin Auxiliar'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.11.2.[{#SNMPINDEX}]'
+              key: 'sophos.ha.auxadminip[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: 8787b04e26ed43a8adad0cc0efa1fef4
+              name: '4.11.1 - Porta Admin Auxiliar'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.11.1.[{#SNMPINDEX}]'
+              key: 'sophos.ha.auxadminport[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: 1268616fc5664d42869bfa74444f6b12
+              name: '4.7 - Balanceamento do HA'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.7.[{#SNMPINDEX}]'
+              key: 'sophos.ha.balancing[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: f015fbfe96424e40aeda320fc3b536b7
+              name: '4.6 - Modo de Configuração do HA'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.6.[{#SNMPINDEX}]'
+              key: 'sophos.ha.configmode[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+              trigger_prototypes:
+                - uuid: a87ba5a6247142d882eb3af40e347bc4
+                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.configmode[{#SNMPINDEX}])=0'
+                  name: 'HA DESATIVADO em {HOST.NAME}'
+                  priority: HIGH
+                  tags:
+                    - tag: Sistema
+                      value: Disponibilidade
+                - uuid: 2d480e7b72f74bc581f5607d79a06a44
+                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.ha.configmode[{#SNMPINDEX}])<>0'
+                  name: 'Mudança no modo de configuração do HA em {HOST.NAME}'
+                  event_name: 'HA de {HOST.NAME} mudou para {ITEM.LASTVALUE}'
+                  priority: WARNING
+                  tags:
+                    - tag: Sistema
+                      value: Disponibilidade
+            - uuid: 4c14bcf0a8cb47bf8561ed5c758de933
+              name: '4.4 - Status do HA no Firewall atual'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.4.[{#SNMPINDEX}]'
+              key: 'sophos.ha.currenteHAstate[{#SNMPINDEX}]'
+              delay: 1d
+              valuemap:
+                name: 'Sophos HA Service'
+              trigger_prototypes:
+                - uuid: 1d071fe84a274f8a94e6353ba4b34a06
+                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.ha.currenteHAstate[{#SNMPINDEX}])<>0'
+                  name: 'HA: Ocorreu um Failover (Troca de papel)'
+                  priority: HIGH
+                - uuid: ac93bb7a65ba4cb0b639fbf0324c16eb
+                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.currenteHAstate[{#SNMPINDEX}])=6'
+                  name: 'Status do HA no Firewall Atual: FALHA em {HOST.NAME}'
+                  priority: DISASTER
+                  tags:
+                    - tag: Sistema
+                      value: Disponibilidade
+            - uuid: 5a3b6ad03719445fa904cf1ff5b041b3
+              name: '4.9 - IP do HA'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.9.[{#SNMPINDEX}]'
+              key: 'sophos.ha.ip[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: e25cbd4ac8af42319ac2059ef149cb6c
+              name: '4.5 - Status do HA no Firewall Vizinho'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.5.[{#SNMPINDEX}]'
+              key: 'sophos.ha.peerHAstate[{#SNMPINDEX}]'
+              delay: 1d
+              valuemap:
+                name: 'Sophos HA Service'
+              trigger_prototypes:
+                - uuid: 2190fd1260474307942f6b01053e9258
+                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.peerHAstate[{#SNMPINDEX}])=6'
+                  name: 'Status do HA no Firewall VIZINHO: FALHA em {HOST.NAME}'
+                  priority: DISASTER
+                  tags:
+                    - tag: Sistema
+                      value: Disponibilidade
+            - uuid: 57fc5fdcd3874a078a8ec4fbf5c76e98
+              name: '4.10 - IP do Vizinho do HA'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.10.[{#SNMPINDEX}]'
+              key: 'sophos.ha.peerip[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+            - uuid: ea62efa219b64b58b9d4532a19a9bace
+              name: '4.8 - Porta do HA'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.4.8.[{#SNMPINDEX}]'
+              key: 'sophos.ha.port[{#SNMPINDEX}]'
+              delay: 1d
+              value_type: TEXT
+              trends: '0'
+              trigger_prototypes:
+                - uuid: d0e541805d114beab42bf9c5db92e503
+                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.port[{#SNMPINDEX}])=2'
+                  name: 'HA: Link de sincronismo (Porta HA) está DOWN'
+                  priority: DISASTER
+          graph_prototypes:
+            - uuid: d8bac0441982409f8e8cfe6b2233c8a9
+              name: 'HA: Status do Cluster e Vizinho'
+              yaxismax: '7'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 199C0D
+                  item:
+                    host: '001 - SOPHOS_XG_V22'
+                    key: 'sophos.ha.currenteHAstate[{#SNMPINDEX}]'
+                - sortorder: '1'
+                  color: F63100
+                  item:
+                    host: '001 - SOPHOS_XG_V22'
+                    key: 'sophos.ha.peerHAstate[{#SNMPINDEX}]'
+        - uuid: d6cdd34bbe664fa08948518147486ea7
+          name: 'Interface Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#IFNAME}, .1.3.6.1.2.1.31.1.1.1.1, {#IFALIAS}, .1.3.6.1.2.1.31.1.1.1.18]'
+          key: sophos.interfaces.discovery
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#IFNAME}'
+                value: '^(Port|Port_ppp|eth).*'
+                formulaid: A
+              - macro: '{#IFNAME}'
+                value: '^(lo|ifb|host|ip6tnl|ipsec|xfrm|crypto|dfq|dummy|erspan|gre|sit|spq|veth|Guest).*'
+                operator: NOT_MATCHES_REGEX
+                formulaid: B
+          item_prototypes:
+            - uuid: ff74842da90044b3af2502d3d89c372a
+              name: 'Interface {#IFNAME}: Status Administrativo'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}'
+              key: 'sophos.interface.adminstatus[{#SNMPINDEX}]'
+              delay: 30s
+              description: 'Status da configuração do link'
+              valuemap:
+                name: 'Sophos Interfaces Status'
+            - uuid: 38c74503e6334d1cb7abf303981c24ae
+              name: 'Interface {#IFNAME} : Descartes de Entrada'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}'
+              key: 'sophos.interface.discards.in[{#SNMPINDEX}]'
+              delay: 30s
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+            - uuid: 91f6f6d075ac43ba97c9a8d11887c06c
+              name: 'Interface {#IFNAME} : Descartes de Saida'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}'
+              key: 'sophos.interface.discards.out[{#SNMPINDEX}]'
+              delay: 30s
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+            - uuid: 27036aa865c449e58819272860508659
+              name: 'Interface {#IFNAME} : Erros de Entrada'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}'
+              key: 'sophos.interface.errorin[{#SNMPINDEX}]'
+              delay: 30s
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              trigger_prototypes:
+                - uuid: a0b606c8e3a443a8b02d76bbde5a8cc0
+                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.interface.errorin[{#SNMPINDEX}]) > 5'
+                  name: 'Interface {#IFNAME}: Excesso de erros de entrada'
+                  priority: WARNING
+            - uuid: bc24bc88085d45e7bda589622784a0bf
+              name: 'Interface {#IFNAME} : Erros de Saida'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}'
+              key: 'sophos.interface.errorout[{#SNMPINDEX}]'
+              delay: 30s
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              trigger_prototypes:
+                - uuid: 1b1bc92f4067440f95abe4850d3fe0b9
+                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.interface.errorout[{#SNMPINDEX}]) > 5'
+                  name: 'Interface {#IFNAME}: Excesso de erros de saída'
+                  priority: WARNING
+            - uuid: e3e1d9d66c094482a3328e1a6393f5f2
+              name: 'Interface {#IFNAME}: Tráfego de Entrada'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}'
+              key: 'sophos.interface.in[{#SNMPINDEX}]'
+              delay: 30s
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+            - uuid: 54b30891923c4d0399af2e56b31fe59b
+              name: 'Interface {#IFNAME}: Última Alteração de Status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.9.{#SNMPINDEX}'
+              key: 'sophos.interface.lastchange[{#SNMPINDEX}]'
+              delay: 30s
+              units: uptime
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.01'
+            - uuid: 52e5629983174ed0978c37671e22e7a4
+              name: 'Interface {#IFNAME}: MAC Address'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.6.{#SNMPINDEX}'
+              key: 'sophos.interface.mac[{#SNMPINDEX}]'
+              delay: 30s
+              value_type: TEXT
+              trends: '0'
+            - uuid: 0818edc8b2bc48d0b1907cba6d1685d2
+              name: 'Interface {#IFNAME}: MTU'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.4.{#SNMPINDEX}'
+              key: 'sophos.interface.mtu[{#SNMPINDEX}]'
+              delay: 1h
+            - uuid: aa5f6d09dd1e4d71a319d322a741fe2d
+              name: 'Interface {#IFNAME}: Tráfego de Saída'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}'
+              key: 'sophos.interface.out[{#SNMPINDEX}]'
+              delay: 30s
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+            - uuid: 441fdf417e6c4cf88ab23e2a501553d0
+              name: 'Interface {#IFNAME}: Velocidade da Interface'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.15.{#SNMPINDEX}'
+              key: 'sophos.interface.speed[{#SNMPINDEX}]'
+              delay: 30s
+              units: bps
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '1000000'
+            - uuid: 73e42486c5ae459e998b8691cbe9bd27
+              name: 'Interface {#IFNAME}: Status Operacional'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}'
+              key: 'sophos.interface.status[{#SNMPINDEX}]'
+              delay: 30s
+              description: 'Status do Link'
+              valuemap:
+                name: 'Sophos Interfaces Status'
+              trigger_prototypes:
+                - uuid: d6e75835242a429bae591a856daaa465
+                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.interface.status[{#SNMPINDEX}])=2 and last(/001 - SOPHOS_XG_V22/sophos.interface.status[{#SNMPINDEX}],#2)=1'
+                  name: 'Interface {#IFNAME}: Link down'
+                  priority: DISASTER
+                  description: 'A interface operacional está em estado DOWN. Verifique o cabo ou o dispositivo conectado.'
+            - uuid: 570dee8e23ab41dab265f95491fa609e
+              name: 'Interface {#IFNAME}: Tipo'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.3.{#SNMPINDEX}'
+              key: 'sophos.interface.type[{#SNMPINDEX}]'
+              delay: 1h
+              valuemap:
+                name: 'Sophos Interface Type'
+            - uuid: 5f0991f492d644a8a93ff466255c6ae9
+              name: 'Interface {#IFNAME}: Utilização da Banda (%)'
+              type: CALCULATED
+              key: 'sophos.interface.util[{#SNMPINDEX}]'
+              delay: 30s
+              value_type: FLOAT
+              trends: '0'
+              units: '%'
+              params: '100 * (last(//sophos.interface.in[{#SNMPINDEX}]) + last(//sophos.interface.out[{#SNMPINDEX}])) / max(last(//sophos.interface.speed[{#SNMPINDEX}]), 1)'
+          trigger_prototypes:
+            - uuid: 252eaa5ddcaf4ba7880469d1eb8bd3cb
+              expression: 'change(/001 - SOPHOS_XG_V22/sophos.interface.discards.in[{#SNMPINDEX}]) > 50 or change(/001 - SOPHOS_XG_V22/sophos.interface.discards.out[{#SNMPINDEX}]) > 50'
+              name: 'Interface {#IFNAME}: Muitos descartes de pacotes (In/Out)'
+              priority: WARNING
+            - uuid: f24312fb5eda44d79de0d5207012dd9a
+              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.interface.in[{#SNMPINDEX}],5m) > (last(/001 - SOPHOS_XG_V22/sophos.interface.speed[{#SNMPINDEX}]) * 0.8)'
+              name: 'Interface {#IFNAME}: Utilização de banda de entrada muito alta (>80%)'
+              priority: AVERAGE
+            - uuid: e5e9018c15244d68b8e875c0a5044f9d
+              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.interface.out[{#SNMPINDEX}],5m) > (last(/001 - SOPHOS_XG_V22/sophos.interface.speed[{#SNMPINDEX}]) * 0.8)'
+              name: 'Interface {#IFNAME}: Utilização de banda de saída muito alta (>80%)'
+              priority: AVERAGE
+          graph_prototypes:
+            - uuid: 634fd877ed3243a6807210ae112c242c
+              name: 'Interface {#IFNAME}: Tráfego de Rede'
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 199C0D
+                  item:
+                    host: '001 - SOPHOS_XG_V22'
+                    key: 'sophos.interface.in[{#SNMPINDEX}]'
+                - sortorder: '1'
+                  drawtype: BOLD_LINE
+                  color: 2774A4
+                  item:
+                    host: '001 - SOPHOS_XG_V22'
+                    key: 'sophos.interface.out[{#SNMPINDEX}]'
+        - uuid: e68648e5736d4746bc1ca72c9825c831
+          name: 'IPSec Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#VPN_NAME}, .1.3.6.1.4.1.2604.5.1.6.1.1.1.1.2]'
+          key: sophos.ipsec.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#VPN_NAME}'
+                value: '^(?!Default).*$'
+                formulaid: A
+          item_prototypes:
+            - uuid: 97c374cf4ff54ef8bc24e50e79518345
+              name: '6.1.8 - VPN IPsec - Tuneis Ativos- {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.8.{#SNMPINDEX}'
+              key: 'sophos.ipsec.active.tunel[{#SNMPINDEX}]'
+              trends: '0'
+              valuemap:
+                name: 'Sophos IPsec Status'
+              trigger_prototypes:
+                - uuid: 86a329e17cdd49aa9962b2d06da58e8b
+                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ipsec.active.tunel[{#SNMPINDEX}])=0'
+                  name: 'VPN IPsec {#VPN_NAME}: Sem túneis ativos'
+                  priority: AVERAGE
+            - uuid: 972d9f07e83c4542bf0be782925e03e7
+              name: '6.1.3 - VPN IPsec - Descricao - {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.3.{#SNMPINDEX}'
+              key: 'sophos.ipsec.description[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 45f2b9ad0cd84f50ac07020cebcc599f
+              name: '6.1.1 - VPN IPsec - ID- {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.1.{#SNMPINDEX}'
+              key: 'sophos.ipsec.id[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: d92babe557af4086ac73f324d263dd87
+              name: '6.1.5 - VPN IPsec - Modo- {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.5.{#SNMPINDEX}'
+              key: 'sophos.ipsec.mode[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 24a6bc2d4d714020b2df4624c442d185
+              name: '6.1.2 - VPN IPsec - Nome - {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.2.{#SNMPINDEX}'
+              key: 'sophos.ipsec.name[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 498befe307f64751ad8703533bba6a25
+              name: '6.1.4 - VPN IPsec - Politica Utilizada- {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.4.{#SNMPINDEX}'
+              key: 'sophos.ipsec.policy[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 630abe2b53c44e019f7443733e84e4ad
+              name: '6.1.7 - VPN IPsec - Porta- {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.7.{#SNMPINDEX}'
+              key: 'sophos.ipsec.port[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 0d6085551e21429ca030ea85008ef3d3
+              name: '6.1.10 - VPN IPsec - Status Configurado - {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.10.{#SNMPINDEX}'
+              key: 'sophos.ipsec.status.conf[{#SNMPINDEX}]'
+              trends: '0'
+              valuemap:
+                name: 'Sophos IPsec Status'
+            - uuid: d31619960bca42d6855db7882f7a8b87
+              name: '6.1.9 - VPN IPsec - Status- {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.9.{#SNMPINDEX}'
+              key: 'sophos.ipsec.status[{#SNMPINDEX}]'
+              trends: '0'
+              valuemap:
+                name: 'Sophos IPsec Status'
+              trigger_prototypes:
+                - uuid: 666100b509d14230a60847a07b6cb8f6
+                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ipsec.status[{#SNMPINDEX}])<>1'
+                  name: 'VPN IPsec {#VPN_NAME}: Túnel fora do ar'
+                  priority: DISASTER
+            - uuid: 6c2d71c0da12469e81c35f516dbc6555
+              name: '6.1.6 - VPN IPsec - Tipo - {#VPN_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.1.1.1.6.{#SNMPINDEX}'
+              key: 'sophos.ipsec.type[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+          graph_prototypes:
+            - uuid: e3d0e87c0415468b9c9e7ba413c62577
+              name: 'VPN IPsec {#VPN_NAME}: Estabilidade do Túnel'
+              yaxismax: '2'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 199C0D
+                  item:
+                    host: '001 - SOPHOS_XG_V22'
+                    key: 'sophos.ipsec.status[{#SNMPINDEX}]'
+                - sortorder: '1'
+                  color: F63100
+                  item:
+                    host: '001 - SOPHOS_XG_V22'
+                    key: 'sophos.ipsec.active.tunel[{#SNMPINDEX}]'
+        - uuid: e516e4330a314d5b817a522180be0c23
+          name: 'IPSec Policies Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#POLICY_NAME}, .1.3.6.1.4.1.2604.5.1.6.1.2.1.1.2]'
+          key: sophos.ipsec.policy.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#POLICY_NAME}'
+                value: '^(?!Default|Microsoft|IKEv2).*$'
+                formulaid: A
+          item_prototypes:
+            - uuid: 17ae3cb889d84561879895f1fdb83bcd
+              name: '6.2.6 - Política IPsec: Auth Algo 1 - {#POLICY_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.2.1.1.6.{#SNMPINDEX}'
+              key: 'sophos.ipsec.policy.alth1[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 8805344e4572433d98bff571b8f4f8f3
+              name: '6.2.5 - Política IPsec: Enc Algo 1 - {#POLICY_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.2.1.1.5.{#SNMPINDEX}'
+              key: 'sophos.ipsec.policy.enc1[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 8f6f850f67de4bcf9adc8cb3db3840d3
+              name: '6.2.1 - Política IPsec: ID - {#POLICY_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.2.1.1.1.{#SNMPINDEX}'
+              key: 'sophos.ipsec.policy.id[{#SNMPINDEX}]'
+            - uuid: 4de635b41ad74dac8e20151de57164db
+              name: '6.2.3 - Política IPsec: Key Life - {#POLICY_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.2.1.1.3.{#SNMPINDEX}'
+              key: 'sophos.ipsec.policy.keylife[{#SNMPINDEX}]'
+              trends: '0'
+            - uuid: fd41c0cb807a45c89574c7f6786909e7
+              name: '6.2.4 - Política IPsec: Key Margin - {#POLICY_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.2.1.1.4.{#SNMPINDEX}'
+              key: 'sophos.ipsec.policy.keymargin[{#SNMPINDEX}]'
+              trends: '0'
+            - uuid: e0286149d94248df9cdbd0785850817e
+              name: '6.2.2 - Política IPsec: Nome - {#POLICY_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.6.1.2.1.1.2.{#SNMPINDEX}'
+              key: 'sophos.ipsec.policy.name[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+          trigger_prototypes:
+            - uuid: 55a97af9a8bd419596a6ac9ed778dff6
+              expression: |
+                change(/001 - SOPHOS_XG_V22/sophos.ipsec.policy.keylife[{#SNMPINDEX}])<>0 
+                or 
+                change(/001 - SOPHOS_XG_V22/sophos.ipsec.policy.enc1[{#SNMPINDEX}])<>0
+              name: 'Política IPSec {#POLICY_NAME}: Configuração foi alterada'
+              priority: WARNING
+        - uuid: 116716d975da45b3a4a7947549ab016a
+          name: 'Wi-Fi Clients Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#CLIENT_NAME}, .1.3.6.1.4.1.2604.5.1.7.2.1.2, {#CLIENT_MAC}, .1.3.6.1.4.1.2604.5.1.7.2.1.5]'
+          key: sopohs.wifi.clients.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: ebae01b6db7641009ee4b6ced56af8b5
+              name: '7.2.6 - Cliente: Canal - {#CLIENT_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.2.1.6.{#SNMPINDEX}'
+              key: 'sophos.wifi.clients.chanel[{#SNMPINDEX}]'
+              trends: '0'
+            - uuid: 601c98337b7742d6850e552857d08218
+              name: '7.2.1 - Cliente: Index - {#CLIENT_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.2.1.1.{#SNMPINDEX}'
+              key: 'sophos.wifi.clients.index[{#SNMPINDEX}]'
+            - uuid: 663d914d26064b5cb63a24f7d9241432
+              name: '7.2.3 - Cliente: IP Type - {#CLIENT_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.2.1.3.{#SNMPINDEX}'
+              key: 'sophos.wifi.clients.iptype[{#SNMPINDEX}]'
+            - uuid: f7fd655e24ef48e4ade41f60c8da6e0e
+              name: '7.2.4 - Cliente: IP - {#CLIENT_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.2.1.4.{#SNMPINDEX}'
+              key: 'sophos.wifi.clients.ip[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: f2045a038e414a8d8e0649af9772fd6b
+              name: '7.2.5 - Cliente: MAC - {#CLIENT_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.2.1.5.{#SNMPINDEX}'
+              key: 'sophos.wifi.clients.mac[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: c7a29bc9b6344c5eaf98149466bc5a2d
+              name: '7.2.2 - Cliente: Nome - {#CLIENT_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.2.1.2.{#SNMPINDEX}'
+              key: 'sophos.wifi.clients.name[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+            - uuid: 5e13251b97ca404eb8798e5a5db699fa
+              name: '7.2.7 - Cliente: SSID - {#CLIENT_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.2604.5.1.7.2.1.7.{#SNMPINDEX}'
+              key: 'sophos.wifi.clients.ssid[{#SNMPINDEX}]'
+              value_type: TEXT
+              trends: '0'
+      valuemaps:
+        - uuid: baba115d052c49058c9a644e53fa2f9e
+          name: 'Sophos HA Service'
+          mappings:
+            - value: '0'
+              newvalue: 'Off (Desativado)'
+            - value: '1'
+              newvalue: 'Standalone (Solitário/Mono)'
+            - value: '2'
+              newvalue: 'HA Up (Cluster Ativo/Habilitado)'
+            - value: '3'
+              newvalue: 'Initializing (Inicializando)'
+            - value: '4'
+              newvalue: 'Active (Ativo/Mestre)'
+            - value: '5'
+              newvalue: 'Passive (Passivo/Reserva)'
+            - value: '6'
+              newvalue: 'Faulty (Falha)'
+        - uuid: ceb53137b8754ec9937c310b382deec7
+          name: 'Sophos Interfaces Status'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+        - uuid: 20a8c7a2f3c943189ba71daed4efdf93
+          name: 'Sophos Interface Type'
+          mappings:
+            - value: '6'
+              newvalue: Ethernet
+            - value: '135'
+              newvalue: 'L2 Vlan'
+            - value: '23'
+              newvalue: PPP
+            - value: '24'
+              newvalue: Loopback
+        - uuid: ed27cb5629be4071bf1f95470b93d5d0
+          name: 'Sophos IPsec Mode'
+          mappings:
+            - value: '1'
+              newvalue: Initiator
+            - value: '2'
+              newvalue: Responder
+        - uuid: 45d33372b6584644a14ac00d148c8cf2
+          name: 'Sophos IPsec Status'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: e3c78892bce9442ea3cc73309f2aadd4
+          name: 'Sophos IPsec Type'
+          mappings:
+            - value: '1'
+              newvalue: Site-to-Site
+            - value: '2'
+              newvalue: Host-to-Host
+        - uuid: ee6e40ac3e1c4b1a896cab6745c01993
+          name: 'Sophos License Status'
+          mappings:
+            - value: '1'
+              newvalue: 'Unregistered (Não registrado)'
+            - value: '2'
+              newvalue: 'Unsubscribed (Sem assinatura)'
+            - value: '3'
+              newvalue: 'Subscribed (Ativo)'
+            - value: '4'
+              newvalue: 'Expired (Expirado)'
+            - value: '5'
+              newvalue: 'Invalid (Inválido)'
+        - uuid: 3cd35128ceef41ad883a90d37fbb02a6
+          name: 'Sophos Service Status'
+          mappings:
+            - value: '1'
+              newvalue: 'Not Applicable (Não se aplica)'
+            - value: '2'
+              newvalue: 'Stopped (Parado)'
+            - value: '3'
+              newvalue: 'Running (Em execução)'
+            - value: '4'
+              newvalue: 'Initializing (Inicializando)'
+            - value: '0'
+              newvalue: 'Disabled (Desabilitado)'
+            - value: '7'
+              newvalue: 'Ready (Pronto)'
+  graphs:
+    - uuid: b33630b1fa9d41c39a9b88db4113f597
+      name: 'Uso de CPU'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 199C0D
+          calc_fnc: MIN
+          item:
+            host: '001 - SOPHOS_XG_V22'
+            key: sophos.cpu.usage.avg
+    - uuid: 67fde69d75604e78867a66c79ccda842
+      name: 'Uso de Disco'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 199C0D
+          calc_fnc: MIN
+          item:
+            host: '001 - SOPHOS_XG_V22'
+            key: sophos.disk.usage
+    - uuid: 11768e5449c141dab67c3b7a6a0862c2
+      name: 'Uso de Memória RAM'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 199C0D
+          calc_fnc: MIN
+          item:
+            host: '001 - SOPHOS_XG_V22'
+            key: sophos.mem.usage
