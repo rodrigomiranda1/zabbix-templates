@@ -16,7 +16,6 @@ O monitoramento está organizado por fabricante/tecnologia para facilitar a loca
 4. Certifique-se de configurar as **Macros** (como `{$SNMP_COMMUNITY}`) no host ou template.
 
 ---
-**Mantido por [Rodrigo Miranda]** *Focado em infraestrutura, segurança e alta disponibilidade.*
 
 ## 🤝 Contribuições e Melhorias
 Este template foi desenvolvido com foco em cenários de produção reais, mas sempre há espaço para evolução! 
