@@ -160,20 +160,38 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.1.2.0
           key: sophos.lic.base.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  // Separa "Feb 26 2029"
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  // Cria a data (meia-noite) e retorna o timestamp em segundos
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 98adcf9af4d543d0b333e708cebe98ec
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.base.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "BASE" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: b968b37af2d04f1b874068f36dc0687c
-              expression: last(/SOPHOS_XG_V22/sophos.lic.base.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.base.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "BASE" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 98adcf9af4d543d0b333e708cebe98ec
-              expression: last(/SOPHOS_XG_V22/sophos.lic.base.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "BASE" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: 14ccba88cb39457381d1576ecaff1108
           name: '5.1.1 -Status Licenca Base'
@@ -201,20 +219,36 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.9.2.0
           key: sophos.lic.centralorch.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: e1df81c6e3db4afdbc38db5256c7031a
+              expression: last(/SOPHOS_XG_V22/sophos.lic.centralorch.exp)<604800
+              recovery_mode: NONE
+              name: 'Licença "CENTRAL ORCHESTRATION" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: 5f4bf2c394434cc39148412318612374
-              expression: last(/SOPHOS_XG_V22/sophos.lic.centralorch.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.centralorch.exp) < 2592000'
               recovery_mode: NONE
               name: 'Licença "CENTRAL ORCHESTRATION" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: e1df81c6e3db4afdbc38db5256c7031a
-              expression: last(/SOPHOS_XG_V22/sophos.lic.centralorch.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "CENTRAL ORCHESTRATION" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: d2c981f8d6654960b5bac38770d42990
           name: '5.9.1 - Status Licenca Central Orchestration'
@@ -244,18 +278,34 @@ zabbix_export:
           delay: 1d
           value_type: TEXT
           trends: '0'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 57d7510cadef421784f5337015b65b82
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.email.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE EMAIL" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: b4fe40b64dab428f82a4e66f1c2e8b47
-              expression: last(/SOPHOS_XG_V22/sophos.lic.email.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.email.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE EMAIL" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 57d7510cadef421784f5337015b65b82
-              expression: last(/SOPHOS_XG_V22/sophos.lic.email.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "PROTEÇÃO DE EMAIL" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: 63abedc5cf6b4b829cf89002414e1b9a
           name: '5.4.1 - Status Licenca E-mail Protection'
@@ -283,20 +333,36 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.2.2.0
           key: sophos.lic.net.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 1194f262ec46448692483a5aa3e2fd5e
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.net.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE REDE" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: b4aef08844594057b0dad7f4a223284d
-              expression: last(/SOPHOS_XG_V22/sophos.lic.net.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.net.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE REDE" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 1194f262ec46448692483a5aa3e2fd5e
-              expression: last(/SOPHOS_XG_V22/sophos.lic.net.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "PROTEÇÃO DE REDE" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: f86e1b386e8a425e96ae41eafe82d1d8
           name: '5.2.1 - Status Licenca Protecao de Rede'
@@ -325,20 +391,36 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.7.2.0
           key: sophos.lic.suport.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 0399dd6eac0a40f29ec400e70675bcd8
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.suport.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "SUPORTE" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: db35adc7dc654766b4af44d1e0bc30bd
-              expression: last(/SOPHOS_XG_V22/sophos.lic.suport.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.suport.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "SUPORTE" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 0399dd6eac0a40f29ec400e70675bcd8
-              expression: last(/SOPHOS_XG_V22/sophos.lic.suport.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "SUPORTE" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: b8a65f5ecdc24150b4e84f0aa3645f86
           name: '5.7.1 - Status Licenca Suporte Aprimorado'
@@ -366,20 +448,36 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.8.2.0
           key: sophos.lic.suportplus.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 96c5b92b312844dc8db44ad23d11667c
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.suportplus.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "SUPORTE AVANÇADO" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: dc6ad53983174dc6ba3ae26491ce4386
-              expression: last(/SOPHOS_XG_V22/sophos.lic.suportplus.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.suportplus.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "SUPORTE AVANÇADO" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 96c5b92b312844dc8db44ad23d11667c
-              expression: last(/SOPHOS_XG_V22/sophos.lic.suportplus.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "SUPORTE AVANÇADO" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: 56f0af9f64fa419a9b8cfa4886190cba
           name: '5.8.1 - Status Licenca Suporte Aprimorado Plus'
@@ -407,20 +505,36 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.3.2.0
           key: sophos.lic.web.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 211c1d517a1641a9929d6b4b24a089ba
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.web.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DA WEB" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: 7f65f94e1801419eae1813e67e3ec7a0
-              expression: last(/SOPHOS_XG_V22/sophos.lic.web.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.web.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DA WEB" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 211c1d517a1641a9929d6b4b24a089ba
-              expression: last(/SOPHOS_XG_V22/sophos.lic.web.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "PROTEÇÃO DA WEB" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: 13d69920f1c648ca9ed778b5d8f23396
           name: '5.3.1 - Status Licenca Protecao da Web'
@@ -448,20 +562,36 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.5.2.0
           key: sophos.lic.webserver.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 04f61fbe4454433683cadc1cacfa3a81
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.webserver.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO DE WEBSERVER" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: 8add77c9d69f43e4b0c9c9291b2cc74d
-              expression: last(/SOPHOS_XG_V22/sophos.lic.webserver.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.webserver.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE WEBSERVER" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 04f61fbe4454433683cadc1cacfa3a81
-              expression: last(/SOPHOS_XG_V22/sophos.lic.webserver.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "PROTEÇÃO DE WEBSERVER" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: 2b140bb8301b4cfb934af09e0682c48f
           name: '5.5.1 - Status Licenca Protecao de Servidor Web'
@@ -489,20 +619,36 @@ zabbix_export:
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.6.2.0
           key: sophos.lic.zeroday.exp
           delay: 1d
-          value_type: TEXT
           trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var months = {
+                      Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+                      Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+                  };
+                  
+                  var parts = value.split(' ');
+                  var month = months[parts[0]];
+                  var day = parseInt(parts[1]);
+                  var year = parseInt(parts[2]);
+                  
+                  var expireDate = new Date(year, month, day);
+                  return Math.floor(expireDate.getTime() / 1000);
           triggers:
+            - uuid: 39d9ebae446549ab8724f90ea7594c6f
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.zeroday.exp) - now() < 604800'
+              recovery_mode: NONE
+              name: 'Licença "PROTEÇÃO ZERO DAY" vence em MENOS DE 7 dias!'
+              priority: HIGH
+              manual_close: 'YES'
             - uuid: e741fae1a0fb46609df2fab8e356b730
-              expression: last(/SOPHOS_XG_V22/sophos.lic.zeroday.exp)<30
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.zeroday.exp) - now() < 2592000'
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO ZERO DAY" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
-              manual_close: 'YES'
-            - uuid: 39d9ebae446549ab8724f90ea7594c6f
-              expression: last(/SOPHOS_XG_V22/sophos.lic.zeroday.exp)<7
-              recovery_mode: NONE
-              name: 'Licença "PROTEÇÃO ZERO DAY" vence em {ITEM.LASTVALUE} dias!'
-              priority: HIGH
               manual_close: 'YES'
         - uuid: 071b2e2d0f8f494198989319aeb971a2
           name: '5.6.1 - Status Licenca Protecao de Zero Day'
@@ -1767,6 +1913,33 @@ zabbix_export:
             - value: '7'
               newvalue: 'Ready (Pronto)'
   graphs:
+    - uuid: 8621bc24165a4db98f424695158b66b7
+      name: 'E-mails Processados'
+      type: STACKED
+      graph_items:
+        - color: 199C0D
+          calc_fnc: MIN
+          item:
+            host: SOPHOS_XG_V22
+            key: sophos.traffic.mail
+        - sortorder: '1'
+          color: F63100
+          calc_fnc: MIN
+          item:
+            host: SOPHOS_XG_V22
+            key: sophos.traffic.mail.pop3
+        - sortorder: '2'
+          color: 2774A4
+          calc_fnc: MIN
+          item:
+            host: SOPHOS_XG_V22
+            key: sophos.traffic.mail.imap
+        - sortorder: '3'
+          color: F7941D
+          calc_fnc: MIN
+          item:
+            host: SOPHOS_XG_V22
+            key: sophos.traffic.mail.smtp
     - uuid: b33630b1fa9d41c39a9b88db4113f597
       name: 'Uso de CPU'
       ymin_type_1: FIXED
@@ -1800,3 +1973,14 @@ zabbix_export:
           item:
             host: SOPHOS_XG_V22
             key: sophos.mem.usage
+    - uuid: 809f17c42eef43c193e1513f9635e7e5
+      name: 'Uso de Memória SWAP'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 199C0D
+          calc_fnc: MIN
+          item:
+            host: SOPHOS_XG_V22
+            key: sophos.swap.usage
