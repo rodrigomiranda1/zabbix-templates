@@ -5,8 +5,8 @@ zabbix_export:
       name: Sophos
   templates:
     - uuid: 8e587774926c400a9d8b32029fa3777f
-      template: '001 - SOPHOS_XG_V22'
-      name: '001 - SOPHOS_XG_V22'
+      template: SOPHOS_XG_V22
+      name: SOPHOS_XG_V22
       description: 'Template feito por Rodrigo Miranda'
       groups:
         - name: Sophos
@@ -25,7 +25,7 @@ zabbix_export:
             name: 'Sophos IPsec Status'
           triggers:
             - uuid: 58cdf3d89e08470fb7f87f0a0036fa60
-              expression: 'max(/001 - SOPHOS_XG_V22/icmpping,#3)=0'
+              expression: 'max(/SOPHOS_XG_V22/icmpping,#3)=0'
               name: '{HOST.NAME} OFFLINE'
               event_name: 'ICMP {HOST.NAME} sem resposta (3 falhas consecutivas)'
               opdata: 'Status: {ITEM.LASTVALUE}'
@@ -34,12 +34,6 @@ zabbix_export:
               tags:
                 - tag: Serviço
                   value: Conectividade
-        - uuid: acbceae8c2084ac39002148d70524ce5
-          name: 'Conexoes Ativas'
-          type: SNMP_AGENT
-          snmp_oid: .1.3.6.1.4.1.2604.5.1.2.11.0
-          key: sophos.connections.active
-          status: DISABLED
         - uuid: bf19e21d89594a09827ea4bcefb4b246
           name: '2.3 - Uso de CPU -  Media'
           type: CALCULATED
@@ -49,9 +43,9 @@ zabbix_export:
           params: 'avg(last_foreach(/*/sophos.cpu.usage.[*]))'
           triggers:
             - uuid: 80d0349705124ab78030283e3da0a937
-              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.cpu.usage.avg,5m)>90'
+              expression: 'avg(/SOPHOS_XG_V22/sophos.cpu.usage.avg,5m)>90'
               recovery_mode: RECOVERY_EXPRESSION
-              recovery_expression: 'avg(/001 - SOPHOS_XG_V22/sophos.cpu.usage.avg,5m)<70'
+              recovery_expression: 'avg(/SOPHOS_XG_V22/sophos.cpu.usage.avg,5m)<70'
               name: 'Uso de CPU elevado em {HOST.NAME} (Acima de 90%)'
               event_name: 'CPU de {HOST.NAME} em {ITEM.LASTVALUE}%'
               opdata: 'Carga atual: {ITEM.LASTVALUE}'
@@ -72,7 +66,7 @@ zabbix_export:
                 - 'return Math.round(Date.parse(value) / 1000);'
           triggers:
             - uuid: cf0b4a33bc8f47ca93d69eac48b2af8b
-              expression: 'fuzzytime(/001 - SOPHOS_XG_V22/sophos.currentdate, 60)=0'
+              expression: 'fuzzytime(/SOPHOS_XG_V22/sophos.currentdate, 60)=0'
               name: 'Relógio de {HOST.NAME} desatualizado'
               event_name: 'Relógio de {HOST.NAME} fora de sincronia (>1 min)'
               priority: WARNING
@@ -99,7 +93,7 @@ zabbix_export:
           units: '%'
           triggers:
             - uuid: 3c92f450ea2a429ca8a36262cc86b9b3
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.disk.usage)>90'
+              expression: last(/SOPHOS_XG_V22/sophos.disk.usage)>90
               name: 'Uso de disco elevado em {HOST.NAME} (Acima de 90%)'
               event_name: 'Disco de {HOST.NAME} quase cheio ({ITEM.LASTVALUE}%)'
               opdata: 'Espaço ocupado: {ITEM.LASTVALUE}%'
@@ -118,7 +112,7 @@ zabbix_export:
           inventory_link: OS_FULL
           triggers:
             - uuid: e21f6b8012cf4d1180b001a97396f29f
-              expression: 'change(/001 - SOPHOS_XG_V22/sophos.firmware)<>0'
+              expression: change(/SOPHOS_XG_V22/sophos.firmware)<>0
               name: 'Firmware de {HOST.NAME} foi alterada'
               event_name: 'A versão do firmware mudou para {ITEM.LASTVALUE}'
               priority: INFO
@@ -136,7 +130,7 @@ zabbix_export:
             name: 'Sophos HA Service'
           triggers:
             - uuid: 9fc558f0176244d8b1d1071a415069a7
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.status)=6'
+              expression: last(/SOPHOS_XG_V22/sophos.ha.status)=6
               name: 'Falha na Alta Disponibilidade (HA) em {HOST.NAME}'
               event_name: 'HA do Sophos em estado de FALHA (Erro Crítico)'
               priority: DISASTER
@@ -165,17 +159,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.1.2.0
           key: sophos.lic.base.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: b968b37af2d04f1b874068f36dc0687c
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.base.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.base.exp)<30
               recovery_mode: NONE
               name: 'Licença "BASE" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 98adcf9af4d543d0b333e708cebe98ec
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.base.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.base.exp)<7
               recovery_mode: NONE
               name: 'Licença "BASE" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -185,17 +180,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.1.1.0
           key: sophos.lic.base.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo)
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: 648745bb17854296bca291058ca1b2cf
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.base.status)<>3'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.base.status)<>3
               name: 'Licença "BASE" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -204,17 +200,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.9.2.0
           key: sophos.lic.centralorch.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: 5f4bf2c394434cc39148412318612374
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.centralorch.exp)<30
               recovery_mode: NONE
               name: 'Licença "CENTRAL ORCHESTRATION" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: e1df81c6e3db4afdbc38db5256c7031a
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.centralorch.exp)<7
               recovery_mode: NONE
               name: 'Licença "CENTRAL ORCHESTRATION" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -224,17 +221,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.9.1.0
           key: sophos.lic.centralorch.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo) 
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: e1508aff6b5a499387d9feae271ecfbe
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.centralorch.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.centralorch.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.centralorch.status)<>2'
               name: 'Licença "CENTRAL ORCHESTRATION" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -243,17 +241,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.4.2.0
           key: sophos.lic.email.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: b4fe40b64dab428f82a4e66f1c2e8b47
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.email.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.email.exp)<30
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE EMAIL" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 57d7510cadef421784f5337015b65b82
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.email.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.email.exp)<7
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE EMAIL" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -263,17 +262,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.4.1.0
           key: sophos.lic.email.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo)
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: 701839ac1b954d94a22c403a467a5349
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.email.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.email.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.email.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.email.status)<>2'
               name: 'Licença "PROTEÇÃO DE EMAIL" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -282,17 +282,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.2.2.0
           key: sophos.lic.net.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: b4aef08844594057b0dad7f4a223284d
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.net.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.net.exp)<30
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE REDE" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 1194f262ec46448692483a5aa3e2fd5e
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.net.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.net.exp)<7
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE REDE" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -302,18 +303,19 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.2.1.0
           key: sophos.lic.net.status
+          delay: 1d
           trends: '0'
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo) 
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: ad17f2649111495f9e75ffb9f777e748
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.net.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.net.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.net.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.net.status)<>2'
               name: 'Licença "PROTEÇÃO DE REDE" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -322,17 +324,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.7.2.0
           key: sophos.lic.suport.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: db35adc7dc654766b4af44d1e0bc30bd
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suport.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.suport.exp)<30
               recovery_mode: NONE
               name: 'Licença "SUPORTE" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 0399dd6eac0a40f29ec400e70675bcd8
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suport.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.suport.exp)<7
               recovery_mode: NONE
               name: 'Licença "SUPORTE" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -342,17 +345,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.7.1.0
           key: sophos.lic.suport.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo) 
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: 47182d39fce04c6d8d05f061028919fe
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suport.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.suport.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.suport.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.suport.status)<>2'
               name: 'Licença "SUPORTE" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -361,17 +365,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.8.2.0
           key: sophos.lic.suportplus.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: dc6ad53983174dc6ba3ae26491ce4386
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.suportplus.exp)<30
               recovery_mode: NONE
               name: 'Licença "SUPORTE AVANÇADO" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 96c5b92b312844dc8db44ad23d11667c
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.suportplus.exp)<7
               recovery_mode: NONE
               name: 'Licença "SUPORTE AVANÇADO" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -381,17 +386,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.8.1.0
           key: sophos.lic.suportplus.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo)
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: a9ff7b3172b04949aa3283a6a07843bb
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.suportplus.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.suportplus.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.suportplus.status)<>2'
               name: 'Licença "SUPORTE AVANÇADO" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -400,17 +406,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.3.2.0
           key: sophos.lic.web.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: 7f65f94e1801419eae1813e67e3ec7a0
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.web.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.web.exp)<30
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DA WEB" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 211c1d517a1641a9929d6b4b24a089ba
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.web.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.web.exp)<7
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DA WEB" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -420,17 +427,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.3.1.0
           key: sophos.lic.web.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo)
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: 8de5ecff90774de9ba5bf280557fd53b
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.web.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.web.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.web.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.web.status)<>2'
               name: 'Licença "PROTEÇÃO DA WEB" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -439,17 +447,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.5.2.0
           key: sophos.lic.webserver.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: 8add77c9d69f43e4b0c9c9291b2cc74d
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.webserver.exp)<30
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE WEBSERVER" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 04f61fbe4454433683cadc1cacfa3a81
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.webserver.exp)<7
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO DE WEBSERVER" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -459,17 +468,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.5.1.0
           key: sophos.lic.webserver.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo)
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: 963988787948487fb8d2e682b97c6134
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.webserver.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.webserver.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.webserver.status)<>2'
               name: 'Licença "PROTEÇÃO DE WEBSERVER" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -478,17 +488,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.6.2.0
           key: sophos.lic.zeroday.exp
+          delay: 1d
           value_type: TEXT
           trends: '0'
           triggers:
             - uuid: e741fae1a0fb46609df2fab8e356b730
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.exp)<30'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.zeroday.exp)<30
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO ZERO DAY" vence em menos de 30 dias em {HOST.NAME1}'
               priority: WARNING
               manual_close: 'YES'
             - uuid: 39d9ebae446549ab8724f90ea7594c6f
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.exp)<7'
+              expression: last(/SOPHOS_XG_V22/sophos.lic.zeroday.exp)<7
               recovery_mode: NONE
               name: 'Licença "PROTEÇÃO ZERO DAY" vence em {ITEM.LASTVALUE} dias!'
               priority: HIGH
@@ -498,17 +509,18 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.4.1.2604.5.1.5.6.1.0
           key: sophos.lic.zeroday.status
+          delay: 1d
           description: |
             1: Unregistered (Não registrado)
             2: Sem Assinatura (Inativo)
-            3: Subscribed (Subscrito / Ativo) — O seu tá aqui!
+            3: Subscribed (Subscrito / Ativo)
             4: Expired (Expirado)
             5: Invalid (Inválido)
           valuemap:
             name: 'Sophos License Status'
           triggers:
             - uuid: 8037acacb76c44e9854f4a34fe64af31
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.status)<>3 and last(/001 - SOPHOS_XG_V22/sophos.lic.zeroday.status)<>2'
+              expression: 'last(/SOPHOS_XG_V22/sophos.lic.zeroday.status)<>3 and last(/SOPHOS_XG_V22/sophos.lic.zeroday.status)<>2'
               name: 'Licença "PROTEÇÃO ZERO DAY" NÃO ESTÁ ATIVA em {HOST.NAME1}'
               priority: DISASTER
               manual_close: 'YES'
@@ -531,9 +543,9 @@ zabbix_export:
           units: '%'
           triggers:
             - uuid: 7065317855f34dc5af83e77eba0d81d2
-              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.mem.usage,5m)>90'
+              expression: 'avg(/SOPHOS_XG_V22/sophos.mem.usage,5m)>90'
               recovery_mode: RECOVERY_EXPRESSION
-              recovery_expression: 'avg(/001 - SOPHOS_XG_V22/sophos.mem.usage,5m)<80'
+              recovery_expression: 'avg(/SOPHOS_XG_V22/sophos.mem.usage,5m)<80'
               name: 'Uso de Memória RAM elevado em {HOST.NAME} (>90%)'
               event_name: 'RAM de {HOST.NAME} quase cheia ({ITEM.LASTVALUE}%)'
               opdata: 'Consumo atual: {ITEM.LASTVALUE}%'
@@ -568,7 +580,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: bb594f35c8834b7399c0d6aeb95447df
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.apache)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.apache)=2
               name: 'Serviço APACHE PAROU em {HOST.NAME}'
               priority: WARNING
               tags:
@@ -583,7 +595,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 9fe5423e1d8145ee9bf24d151b656ab7
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.as)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.as)=2
               name: 'Serviço ANTISPAM PAROU em {HOST.NAME}'
               priority: WARNING
               tags:
@@ -598,7 +610,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 45cf19dfe58d419fa609308ab003a1a6
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.av)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.av)=2
               name: 'Serviço ANTIVIRUS PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -613,7 +625,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: e229c7fa652145eea4afa308aebac55e
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.database)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.database)=2
               name: 'Serviço BANCO DE DADOS PAROU em {HOST.NAME}'
               priority: AVERAGE
               tags:
@@ -628,7 +640,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 07fd419edb5d4005b6e3c962babad0ef
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.dgd)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.dgd)=2
               name: 'Serviço DGD PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -643,7 +655,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: b7a523baae96436c89aa44d4c532fbe8
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.dns)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.dns)=2
               name: 'Serviço DNS PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -658,7 +670,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 476d002c50b3483c9447cf10524aa924
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ftp)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.ftp)=2
               name: 'Serviço FTP PAROU em {HOST.NAME}'
               priority: WARNING
               tags:
@@ -673,7 +685,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: aa299b8d76af4677ad97b03bb7722548
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.garner)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.garner)=2
               name: 'Serviço LOGS(GARNER) PAROU em {HOST.NAME}'
               priority: AVERAGE
               tags:
@@ -688,7 +700,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 08644fbbcbbf461c896c38c0530b4935
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ha)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.ha)=2
               name: 'Serviço HA PAROU em {HOST.NAME}'
               priority: AVERAGE
               tags:
@@ -703,7 +715,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 816b6096fcb94c6f905d1682b70e288f
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.http)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.http)=2
               name: 'Serviço HTTP PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -718,7 +730,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 785496cf9c544c0f91f359eb40b3bf24
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.imap)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.imap)=2
               name: 'Serviço IMAP PAROU em {HOST.NAME}'
               priority: WARNING
               tags:
@@ -733,7 +745,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: d688f6bda94641d8a36a62fcdf9041ae
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ips)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.ips)=2
               name: 'Serviço IPS PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -748,7 +760,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 2c3f81ac64784f1faa6e4c31cf426018
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ipsecvpn)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.ipsecvpn)=2
               name: 'Serviço IPSEC VPN PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -763,7 +775,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 2c8e4b561b184a839608a50060480bdc
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.network)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.network)=2
               name: 'Serviço NETWORK PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -778,7 +790,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 3df502247ff04356bb1ce961bc024906
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ntp)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.ntp)=2
               name: 'Serviço NTP PAROU em {HOST.NAME}'
               priority: AVERAGE
               tags:
@@ -793,7 +805,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: ad3128012c5d44ca972c69785005332c
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.pop3)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.pop3)=2
               name: 'Serviço POP3 PAROU em {HOST.NAME}'
               priority: WARNING
               tags:
@@ -808,7 +820,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: f290d838e61041a99a6b249952ace011
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.routing)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.routing)=2
               name: 'Serviço ROUTING PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -823,7 +835,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: baf862ba7c4846b692ecb561b8209229
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.smtp)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.smtp)=2
               name: 'Serviço SMTP PAROU em {HOST.NAME}'
               priority: AVERAGE
               tags:
@@ -838,7 +850,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 4e9b08e442ef4916984b07292a9959a4
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.ssh)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.ssh)=2
               name: 'Serviço SSH PAROU em {HOST.NAME}'
               priority: AVERAGE
               tags:
@@ -853,7 +865,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: deaccd97fe294537907400bd7b3401e4
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.sslvpn)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.sslvpn)=2
               name: 'Serviço SSL VPN PAROU em {HOST.NAME}'
               priority: HIGH
               tags:
@@ -868,7 +880,7 @@ zabbix_export:
             name: 'Sophos Service Status'
           triggers:
             - uuid: 97e5ad4ef7804e5aa14e856d3514e6eb
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.service.tomcat)=2'
+              expression: last(/SOPHOS_XG_V22/sophos.service.tomcat)=2
               name: 'Serviço TOMCAT PAROU em {HOST.NAME}'
               priority: WARNING
               tags:
@@ -893,9 +905,9 @@ zabbix_export:
           units: '%'
           triggers:
             - uuid: 6492dd5999b94b34b579f1af17da2f98
-              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.swap.usage,5m)>20'
+              expression: 'avg(/SOPHOS_XG_V22/sophos.swap.usage,5m)>20'
               recovery_mode: RECOVERY_EXPRESSION
-              recovery_expression: 'avg(/001 - SOPHOS_XG_V22/sophos.swap.usage,5m)<10'
+              recovery_expression: 'avg(/SOPHOS_XG_V22/sophos.swap.usage,5m)<10'
               name: 'Uso de Swap elevado em {HOST.NAME} (>20%)'
               event_name: '{HOST.NAME} está usando Swap ({ITEM.LASTVALUE}%)'
               opdata: 'Swap atual: {ITEM.LASTVALUE}%'
@@ -965,7 +977,7 @@ zabbix_export:
                 - '0.01'
           triggers:
             - uuid: 8d1a1cb6a25343f09c178a3543ce8a34
-              expression: 'last(/001 - SOPHOS_XG_V22/sophos.uptime)<10m'
+              expression: last(/SOPHOS_XG_V22/sophos.uptime)<10m
               name: '{HOST.NAME} foi reiniciaro recentemente'
               event_name: '{HOST.NAME} deu boot (Uptime < 10 min)'
               opdata: 'Tempo ligado: {ITEM.LASTVALUE}'
@@ -993,7 +1005,7 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.2.1.1.4.0
           key: sys.contact
-          delay: 15s
+          delay: 1d
           value_type: TEXT
           trends: '0'
           inventory_link: CONTACT
@@ -1002,7 +1014,7 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: .1.3.6.1.2.1.1.6.0
           key: sys.location
-          delay: 15s
+          delay: 1d
           value_type: TEXT
           trends: '0'
           inventory_link: LOCATION
@@ -1156,14 +1168,14 @@ zabbix_export:
               trends: '0'
               trigger_prototypes:
                 - uuid: a87ba5a6247142d882eb3af40e347bc4
-                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.configmode[{#SNMPINDEX}])=0'
+                  expression: 'last(/SOPHOS_XG_V22/sophos.ha.configmode[{#SNMPINDEX}])=0'
                   name: 'HA DESATIVADO em {HOST.NAME}'
                   priority: HIGH
                   tags:
                     - tag: Sistema
                       value: Disponibilidade
                 - uuid: 2d480e7b72f74bc581f5607d79a06a44
-                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.ha.configmode[{#SNMPINDEX}])<>0'
+                  expression: 'change(/SOPHOS_XG_V22/sophos.ha.configmode[{#SNMPINDEX}])<>0'
                   name: 'Mudança no modo de configuração do HA em {HOST.NAME}'
                   event_name: 'HA de {HOST.NAME} mudou para {ITEM.LASTVALUE}'
                   priority: WARNING
@@ -1180,11 +1192,11 @@ zabbix_export:
                 name: 'Sophos HA Service'
               trigger_prototypes:
                 - uuid: 1d071fe84a274f8a94e6353ba4b34a06
-                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.ha.currenteHAstate[{#SNMPINDEX}])<>0'
+                  expression: 'change(/SOPHOS_XG_V22/sophos.ha.currenteHAstate[{#SNMPINDEX}])<>0'
                   name: 'HA: Ocorreu um Failover (Troca de papel)'
                   priority: HIGH
                 - uuid: ac93bb7a65ba4cb0b639fbf0324c16eb
-                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.currenteHAstate[{#SNMPINDEX}])=6'
+                  expression: 'last(/SOPHOS_XG_V22/sophos.ha.currenteHAstate[{#SNMPINDEX}])=6'
                   name: 'Status do HA no Firewall Atual: FALHA em {HOST.NAME}'
                   priority: DISASTER
                   tags:
@@ -1208,7 +1220,7 @@ zabbix_export:
                 name: 'Sophos HA Service'
               trigger_prototypes:
                 - uuid: 2190fd1260474307942f6b01053e9258
-                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.peerHAstate[{#SNMPINDEX}])=6'
+                  expression: 'last(/SOPHOS_XG_V22/sophos.ha.peerHAstate[{#SNMPINDEX}])=6'
                   name: 'Status do HA no Firewall VIZINHO: FALHA em {HOST.NAME}'
                   priority: DISASTER
                   tags:
@@ -1232,7 +1244,7 @@ zabbix_export:
               trends: '0'
               trigger_prototypes:
                 - uuid: d0e541805d114beab42bf9c5db92e503
-                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ha.port[{#SNMPINDEX}])=2'
+                  expression: 'last(/SOPHOS_XG_V22/sophos.ha.port[{#SNMPINDEX}])=2'
                   name: 'HA: Link de sincronismo (Porta HA) está DOWN'
                   priority: DISASTER
           graph_prototypes:
@@ -1244,12 +1256,12 @@ zabbix_export:
               graph_items:
                 - color: 199C0D
                   item:
-                    host: '001 - SOPHOS_XG_V22'
+                    host: SOPHOS_XG_V22
                     key: 'sophos.ha.currenteHAstate[{#SNMPINDEX}]'
                 - sortorder: '1'
                   color: F63100
                   item:
-                    host: '001 - SOPHOS_XG_V22'
+                    host: SOPHOS_XG_V22
                     key: 'sophos.ha.peerHAstate[{#SNMPINDEX}]'
         - uuid: d6cdd34bbe664fa08948518147486ea7
           name: 'Interface Discovery'
@@ -1261,7 +1273,7 @@ zabbix_export:
             evaltype: AND
             conditions:
               - macro: '{#IFNAME}'
-                value: '^(Port|Port_ppp|eth).*'
+                value: '^(Port).*'
                 formulaid: A
               - macro: '{#IFNAME}'
                 value: '^(lo|ifb|host|ip6tnl|ipsec|xfrm|crypto|dfq|dummy|erspan|gre|sit|spq|veth|Guest).*'
@@ -1309,7 +1321,7 @@ zabbix_export:
                     - ''
               trigger_prototypes:
                 - uuid: a0b606c8e3a443a8b02d76bbde5a8cc0
-                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.interface.errorin[{#SNMPINDEX}]) > 5'
+                  expression: 'change(/SOPHOS_XG_V22/sophos.interface.errorin[{#SNMPINDEX}]) > 5'
                   name: 'Interface {#IFNAME}: Excesso de erros de entrada'
                   priority: WARNING
             - uuid: bc24bc88085d45e7bda589622784a0bf
@@ -1324,7 +1336,7 @@ zabbix_export:
                     - ''
               trigger_prototypes:
                 - uuid: 1b1bc92f4067440f95abe4850d3fe0b9
-                  expression: 'change(/001 - SOPHOS_XG_V22/sophos.interface.errorout[{#SNMPINDEX}]) > 5'
+                  expression: 'change(/SOPHOS_XG_V22/sophos.interface.errorout[{#SNMPINDEX}]) > 5'
                   name: 'Interface {#IFNAME}: Excesso de erros de saída'
                   priority: WARNING
             - uuid: e3e1d9d66c094482a3328e1a6393f5f2
@@ -1400,7 +1412,7 @@ zabbix_export:
                 name: 'Sophos Interfaces Status'
               trigger_prototypes:
                 - uuid: d6e75835242a429bae591a856daaa465
-                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.interface.status[{#SNMPINDEX}])=2 and last(/001 - SOPHOS_XG_V22/sophos.interface.status[{#SNMPINDEX}],#2)=1'
+                  expression: 'last(/SOPHOS_XG_V22/sophos.interface.status[{#SNMPINDEX}])=2 and last(/SOPHOS_XG_V22/sophos.interface.status[{#SNMPINDEX}],#2)=1'
                   name: 'Interface {#IFNAME}: Link down'
                   priority: DISASTER
                   description: 'A interface operacional está em estado DOWN. Verifique o cabo ou o dispositivo conectado.'
@@ -1423,15 +1435,15 @@ zabbix_export:
               params: '100 * (last(//sophos.interface.in[{#SNMPINDEX}]) + last(//sophos.interface.out[{#SNMPINDEX}])) / max(last(//sophos.interface.speed[{#SNMPINDEX}]), 1)'
           trigger_prototypes:
             - uuid: 252eaa5ddcaf4ba7880469d1eb8bd3cb
-              expression: 'change(/001 - SOPHOS_XG_V22/sophos.interface.discards.in[{#SNMPINDEX}]) > 50 or change(/001 - SOPHOS_XG_V22/sophos.interface.discards.out[{#SNMPINDEX}]) > 50'
+              expression: 'change(/SOPHOS_XG_V22/sophos.interface.discards.in[{#SNMPINDEX}]) > 50 or change(/SOPHOS_XG_V22/sophos.interface.discards.out[{#SNMPINDEX}]) > 50'
               name: 'Interface {#IFNAME}: Muitos descartes de pacotes (In/Out)'
               priority: WARNING
             - uuid: f24312fb5eda44d79de0d5207012dd9a
-              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.interface.in[{#SNMPINDEX}],5m) > (last(/001 - SOPHOS_XG_V22/sophos.interface.speed[{#SNMPINDEX}]) * 0.8)'
+              expression: 'avg(/SOPHOS_XG_V22/sophos.interface.in[{#SNMPINDEX}],5m) > (last(/SOPHOS_XG_V22/sophos.interface.speed[{#SNMPINDEX}]) * 0.8)'
               name: 'Interface {#IFNAME}: Utilização de banda de entrada muito alta (>80%)'
               priority: AVERAGE
             - uuid: e5e9018c15244d68b8e875c0a5044f9d
-              expression: 'avg(/001 - SOPHOS_XG_V22/sophos.interface.out[{#SNMPINDEX}],5m) > (last(/001 - SOPHOS_XG_V22/sophos.interface.speed[{#SNMPINDEX}]) * 0.8)'
+              expression: 'avg(/SOPHOS_XG_V22/sophos.interface.out[{#SNMPINDEX}],5m) > (last(/SOPHOS_XG_V22/sophos.interface.speed[{#SNMPINDEX}]) * 0.8)'
               name: 'Interface {#IFNAME}: Utilização de banda de saída muito alta (>80%)'
               priority: AVERAGE
           graph_prototypes:
@@ -1441,13 +1453,13 @@ zabbix_export:
                 - drawtype: GRADIENT_LINE
                   color: 199C0D
                   item:
-                    host: '001 - SOPHOS_XG_V22'
+                    host: SOPHOS_XG_V22
                     key: 'sophos.interface.in[{#SNMPINDEX}]'
                 - sortorder: '1'
                   drawtype: BOLD_LINE
                   color: 2774A4
                   item:
-                    host: '001 - SOPHOS_XG_V22'
+                    host: SOPHOS_XG_V22
                     key: 'sophos.interface.out[{#SNMPINDEX}]'
         - uuid: e68648e5736d4746bc1ca72c9825c831
           name: 'IPSec Discovery'
@@ -1471,7 +1483,7 @@ zabbix_export:
                 name: 'Sophos IPsec Status'
               trigger_prototypes:
                 - uuid: 86a329e17cdd49aa9962b2d06da58e8b
-                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ipsec.active.tunel[{#SNMPINDEX}])=0'
+                  expression: 'last(/SOPHOS_XG_V22/sophos.ipsec.active.tunel[{#SNMPINDEX}])=0'
                   name: 'VPN IPsec {#VPN_NAME}: Sem túneis ativos'
                   priority: AVERAGE
             - uuid: 972d9f07e83c4542bf0be782925e03e7
@@ -1534,7 +1546,7 @@ zabbix_export:
                 name: 'Sophos IPsec Status'
               trigger_prototypes:
                 - uuid: 666100b509d14230a60847a07b6cb8f6
-                  expression: 'last(/001 - SOPHOS_XG_V22/sophos.ipsec.status[{#SNMPINDEX}])<>1'
+                  expression: 'last(/SOPHOS_XG_V22/sophos.ipsec.status[{#SNMPINDEX}])<>1'
                   name: 'VPN IPsec {#VPN_NAME}: Túnel fora do ar'
                   priority: DISASTER
             - uuid: 6c2d71c0da12469e81c35f516dbc6555
@@ -1553,12 +1565,12 @@ zabbix_export:
               graph_items:
                 - color: 199C0D
                   item:
-                    host: '001 - SOPHOS_XG_V22'
+                    host: SOPHOS_XG_V22
                     key: 'sophos.ipsec.status[{#SNMPINDEX}]'
                 - sortorder: '1'
                   color: F63100
                   item:
-                    host: '001 - SOPHOS_XG_V22'
+                    host: SOPHOS_XG_V22
                     key: 'sophos.ipsec.active.tunel[{#SNMPINDEX}]'
         - uuid: e516e4330a314d5b817a522180be0c23
           name: 'IPSec Policies Discovery'
@@ -1613,9 +1625,9 @@ zabbix_export:
           trigger_prototypes:
             - uuid: 55a97af9a8bd419596a6ac9ed778dff6
               expression: |
-                change(/001 - SOPHOS_XG_V22/sophos.ipsec.policy.keylife[{#SNMPINDEX}])<>0 
+                change(/SOPHOS_XG_V22/sophos.ipsec.policy.keylife[{#SNMPINDEX}])<>0 
                 or 
-                change(/001 - SOPHOS_XG_V22/sophos.ipsec.policy.enc1[{#SNMPINDEX}])<>0
+                change(/SOPHOS_XG_V22/sophos.ipsec.policy.enc1[{#SNMPINDEX}])<>0
               name: 'Política IPSec {#POLICY_NAME}: Configuração foi alterada'
               priority: WARNING
         - uuid: 116716d975da45b3a4a7947549ab016a
@@ -1764,7 +1776,7 @@ zabbix_export:
           color: 199C0D
           calc_fnc: MIN
           item:
-            host: '001 - SOPHOS_XG_V22'
+            host: SOPHOS_XG_V22
             key: sophos.cpu.usage.avg
     - uuid: 67fde69d75604e78867a66c79ccda842
       name: 'Uso de Disco'
@@ -1775,7 +1787,7 @@ zabbix_export:
           color: 199C0D
           calc_fnc: MIN
           item:
-            host: '001 - SOPHOS_XG_V22'
+            host: SOPHOS_XG_V22
             key: sophos.disk.usage
     - uuid: 11768e5449c141dab67c3b7a6a0862c2
       name: 'Uso de Memória RAM'
@@ -1786,5 +1798,5 @@ zabbix_export:
           color: 199C0D
           calc_fnc: MIN
           item:
-            host: '001 - SOPHOS_XG_V22'
+            host: SOPHOS_XG_V22
             key: sophos.mem.usage
